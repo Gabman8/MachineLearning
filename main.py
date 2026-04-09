@@ -16,47 +16,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 airbnb_data = pd.read_csv("./airbnb-listings-extract.csv", sep=";", decimal='.')
 
 # =========================
-# 2. LIMPIEZA DE LA VARIABLE OBJETIVO (PRICE)
-# =========================
-
-# eliminar símbolos de moneda
-airbnb_data['Price'] = (
-    airbnb_data['Price']
-    .astype(str)
-    .str.replace(r'[^\d.]', '', regex=True)
-)
-
-# convertir a número
-airbnb_data['Price'] = pd.to_numeric(airbnb_data['Price'], errors='coerce')
-
-# eliminar filas sin precio
-airbnb_data = airbnb_data.dropna(subset=['Price'])
-
-print("NaN en Price:", airbnb_data['Price'].isna().sum())
-
-# =========================
-# 3. LIMPIEZA DE COLUMNAS CON %
-# =========================
-
-for col in ['Host Response Rate', 'Host Acceptance Rate']:
-
-    airbnb_data[col] = (
-        airbnb_data[col]
-        .astype(str)
-        .str.replace('%','')
-    )
-
-    airbnb_data[col] = pd.to_numeric(airbnb_data[col], errors='coerce')
-
-# =========================
-# 4. ELIMINACIÓN DE OUTLIERS
-# =========================
-
-# eliminar precios extremos (mejora mucho el modelo)
-airbnb_data = airbnb_data[airbnb_data['Price'] < 500]
-
-# =========================
-# 5. SELECCIÓN DE FEATURES
+# 2. SELECCIÓN DE FEATURES
 # =========================
 # Se eligen variables relevantes para predecir el precio, evitando aquellas que no aportan valor predictivo
 # y las que al ejecutar el modelo se demuestra que tampoco aportan valor
@@ -78,24 +38,74 @@ columns = [
     'Host Total Listings Count',
 ]
 
-X = airbnb_data[columns]
-y = airbnb_data['Price']
+# =========================
+# 3. LIMPIEZA DE LA VARIABLE OBJETIVO (PRICE)
+# =========================
+
+# eliminar símbolos de moneda
+airbnb_data['Price'] = (
+    airbnb_data['Price']
+    .astype(str)
+    .str.replace(r'[^\d.]', '', regex=True)
+)
+
+# convertir a número
+airbnb_data['Price'] = pd.to_numeric(airbnb_data['Price'], errors='coerce')
+
+# eliminar filas sin precio
+airbnb_data = airbnb_data.dropna(subset=['Price'])
+
+print("NaN en Price:", airbnb_data['Price'].isna().sum())
 
 # =========================
-# 6. LOG TRANSFORM DEL TARGET
+# 4. LIMPIEZA DE COLUMNAS CON %
+# =========================
+
+for col in ['Host Response Rate', 'Host Acceptance Rate']:
+
+    airbnb_data[col] = (
+        airbnb_data[col]
+        .astype(str)
+        .str.replace('%','')
+    )
+
+    airbnb_data[col] = pd.to_numeric(airbnb_data[col], errors='coerce')
+
+# =========================
+# 5. TRAIN / TEST SPLIT
+# =========================
+X = airbnb_data[columns]
+y = airbnb_data['Price']
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+# =========================
+# 6. ELIMINACIÓN DE OUTLIERS
+# =========================
+
+# eliminar precios extremos (mejora mucho el modelo)
+y_train = y_train[y_train < 500]
+
+
+# =========================
+# 7. LOG TRANSFORM DEL TARGET
 # =========================
 
 # mejora el aprendizaje en distribuciones sesgadas
 y = np.log1p(y)
 
 # =========================
-# 7. CODIFICACIÓN DE VARIABLES CATEGÓRICAS
+# 8. CODIFICACIÓN DE VARIABLES CATEGÓRICAS
 # =========================
 
 X = pd.get_dummies(X, drop_first=True)
 
 # =========================
-# 8. IMPUTACIÓN DE VALORES FALTANTES
+# 9. IMPUTACIÓN DE VALORES FALTANTES
 # =========================
 
 imputer = SimpleImputer(strategy="median")
@@ -103,17 +113,6 @@ imputer = SimpleImputer(strategy="median")
 X = pd.DataFrame(
     imputer.fit_transform(X),
     columns=X.columns
-)
-
-# =========================
-# 9. TRAIN / TEST SPLIT
-# =========================
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42
 )
 
 # =========================
