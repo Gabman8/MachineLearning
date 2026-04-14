@@ -168,7 +168,7 @@ print("MAE:", mae)
 print("R2:", r2)
 
 # =========================
-# 13. CROSS VALIDATION (SIN LEAKAGE)
+# 13. CROSS VALIDATION
 # =========================
 
 scores = cross_val_score(
